@@ -151,6 +151,7 @@ def prepare_bosch(dataset_folder, nrows):
 
 
 def prepare_fraud(dataset_folder, nrows):
+    import glob
     if not os.path.exists(dataset_folder):
         os.makedirs(dataset_folder)
     filename = "creditcard.csv"
@@ -162,7 +163,11 @@ def prepare_fraud(dataset_folder, nrows):
 
     os.system("kaggle datasets download mlg-ulb/creditcardfraud -f" +
               filename + " -p " + dataset_folder)
-    df = pd.read_csv(local_url + ".zip", dtype=np.float32, nrows=nrows)
+
+    zipped_path = os.path.abspath(glob.glob(dataset_folder + "/*.zip")[0])
+    print("Zipped fraud downloaded to: ", dataset_folder)
+    
+    df = pd.read_csv(zipped_path, dtype=np.float32, nrows=nrows)
     X = df[[col for col in df.columns if col.startswith('V')]].to_numpy(dtype=np.float32)
     y = df['Class'].to_numpy(dtype=np.float32)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=77,

@@ -18,14 +18,15 @@ RUN apt-get update && \
         wget \
         zlib1g-dev && \
     rm -rf /var/lib/apt/*
+
 RUN curl -o /opt/miniconda.sh \
-        -O https://repo.continuum.io/miniconda/Miniconda3-4.4.10-Linux-x86_64.sh  && \
+	https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
     chmod +x /opt/miniconda.sh && \
     /opt/miniconda.sh -b -p /opt/conda && \
     /opt/conda/bin/conda update -n base conda && \
     rm /opt/miniconda.sh
 ENV PATH /opt/conda/bin:$PATH
-RUN conda install \
+RUN conda install -c conda-forge \
         bokeh \
         h5py \
         ipython \
@@ -46,12 +47,13 @@ RUN conda install \
         distributed \
         tqdm && \
         conda clean -ya && \
-        pip install kaggle dask-xgboost tqdm && \
-        conda install -c rapidsai-nightly dask-cuda
+        pip install kaggle tqdm && \
+        conda install -c rapidsai-nightly -c nvidia -c conda-forge -c defaults cudf=0.15 dask-cuda && \
+        pip install xgboost==1.2.0rc2 
 
 # cmake
-ENV CMAKE_SHORT_VERSION 3.12
-ENV CMAKE_LONG_VERSION 3.12.3
+ENV CMAKE_SHORT_VERSION 3.14
+ENV CMAKE_LONG_VERSION 3.14.7
 RUN wget --no-check-certificate \
         "https://cmake.org/files/v${CMAKE_SHORT_VERSION}/cmake-${CMAKE_LONG_VERSION}.tar.gz" && \
     tar xf cmake-${CMAKE_LONG_VERSION}.tar.gz && \
@@ -106,18 +108,18 @@ RUN git config --global http.sslVerify false && \
     python setup.py install --precompile
 
 # catboost
-RUN git config --global http.sslVerify false && \
-    git clone --recursive "https://github.com/catboost/catboost" /opt/catboost && \
-    cd /opt/catboost && \
-    cd catboost/python-package/catboost && \
-    ../../../ya make \
-        -r \
-        -o ../../.. \
-        -DUSE_ARCADIA_PYTHON=no \
-        -DUSE_SYSTEM_PYTHON=3.7\
-        -DPYTHON_CONFIG=python3-config \
-        -DCUDA_ROOT=$(dirname $(dirname $(which nvcc)))
-ENV PYTHONPATH=$PYTHONPATH:/opt/catboost/catboost/python-package
+# RUN git config --global http.sslVerify false && \
+#     git clone --recursive "https://github.com/catboost/catboost" /opt/catboost && \
+#     cd /opt/catboost && \
+#     cd catboost/python-package/catboost && \
+#     ../../../ya make \
+#         -r \
+#         -o ../../.. \
+#         -DUSE_ARCADIA_PYTHON=no \
+#         -DUSE_SYSTEM_PYTHON=3.7\
+#         -DPYTHON_CONFIG=python3-config \
+#         -DCUDA_ROOT=$(dirname $(dirname $(which nvcc)))
+# ENV PYTHONPATH=$PYTHONPATH:/opt/catboost/catboost/python-package
 
 # xgboost
 RUN git config --global http.sslVerify false && \
@@ -126,7 +128,7 @@ RUN git config --global http.sslVerify false && \
     mkdir build && \
     cd build && \
     cmake .. \
-        -DGPU_COMPUTE_VER="35;50;52;60;61;70" \
+        -DGPU_COMPUTE_VER="60;70;80" \
         -DUSE_CUDA=ON \
         -DUSE_NCCL=ON && \
     make -j4 && \
