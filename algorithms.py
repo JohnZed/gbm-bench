@@ -69,6 +69,8 @@ class Algorithm(ABC):
     def create(name):  # pylint: disable=too-many-return-statements
         if name == 'xgb-gpu':
             return XgbGPUHistAlgorithm()
+        if name == 'xgb-gpu-rmm':
+            return XgbGPUHistRMMAlgorithm()
         if name == 'xgb-gpu-dask':
             return XgbGPUHistDaskAlgorithm()
         if name == 'xgb-gpu-dask-old':
@@ -146,6 +148,22 @@ class XgbGPUHistAlgorithm(XgbAlgorithm):
         params.update({"tree_method": "gpu_hist", "gpu_id": 0})
         return params
 
+class XgbGPUHistRMMAlgorithm(XgbAlgorithm):
+    def configure(self, data, args):
+        params = super(XgbGPUHistRMMAlgorithm, self).configure(data, args)
+        params.update({"tree_method": "gpu_hist", "gpu_id": 0})
+        return params
+
+    def fit(self, data, args):
+        import rmm
+        result = None
+        try:
+            print("--- Using RMM ---")
+            rmm.reinitialize(pool_allocator=True) # not included in timing block
+            result = super(XgbGPUHistRMMAlgorithm, self).fit(data, args)
+        finally:
+            rmm.reinitialize(pool_allocator=False)
+        return result
 
 class XgbGPUHistDaskAlgorithm(XgbAlgorithm):
     def configure(self, data, args):

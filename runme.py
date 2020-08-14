@@ -133,8 +133,11 @@ def main():
     results = {}
     for dataset in args.dataset.split(","):
         folder = os.path.join(args.root, dataset)
-        results.update({dataset: benchmark(args, folder, dataset)})
-        print(json.dumps({dataset: results[dataset]}, indent=2, sort_keys=True))
+        try:
+            results.update({dataset: benchmark(args, folder, dataset)})
+            print(json.dumps({dataset: results[dataset]}, indent=2, sort_keys=True))
+        except Exception as err:
+            print("Failed to run {}: {}".format(dataset, err))
     output = json.dumps(results, indent=2, sort_keys=True)
     output_file = open(args.output, "w")
     output_file.write(output + "\n")
